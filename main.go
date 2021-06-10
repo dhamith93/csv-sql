@@ -15,52 +15,17 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func completer(d prompt.Document) []prompt.Suggest {
-	s := []prompt.Suggest{
-		{Text: "LOAD", Description: "LOAD /path/to/file table_name"},
-		{Text: "SAVE", Description: "SAVE table_name /path/to/file"},
-		{Text: "SHOW TABLES", Description: ""},
-		{Text: "EXIT", Description: ""},
-		{Text: "SELECT", Description: ""},
-		{Text: "INSERT", Description: ""},
-		{Text: "INTO", Description: ""},
-		{Text: "VALUES", Description: ""},
-		{Text: "UPDATE", Description: ""},
-		{Text: "DELETE", Description: ""},
-		{Text: "FROM", Description: ""},
-		{Text: "WHERE", Description: ""},
-		{Text: "AND", Description: ""},
-		{Text: "INNER", Description: ""},
-		{Text: "LEFT", Description: ""},
-		{Text: "RIGHT", Description: ""},
-		{Text: "FULL", Description: ""},
-		{Text: "JOIN", Description: ""},
-		{Text: "ON", Description: ""},
-		{Text: "SET", Description: ""},
-		{Text: "LIMIT", Description: ""},
-		{Text: "ORDER", Description: ""},
-		{Text: "ASC", Description: ""},
-		{Text: "DESC", Description: ""},
-		{Text: "NULL", Description: ""},
-		{Text: "LIKE", Description: ""},
-		{Text: "IS", Description: ""},
-		{Text: "NOT", Description: ""},
-	}
-	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
-}
-
 func main() {
 	defer handleExit()
 	fmt.Println("Welcome to csvql")
 	files := make([]entity.File, 0)
 	tableCount := 0
 	dbName := "/tmp/csvql_db_" + helpers.RandSeq(10) + ".db"
-	fmt.Println(dbName)
 	db := createDB(dbName)
 	defer db.Close()
 
 	for {
-		response := strings.TrimSpace(prompt.Input("cmd > ", completer))
+		response := strings.TrimSpace(prompt.Input("cmd > ", helpers.Completer))
 		responseArr := strings.Fields(response)
 		if len(responseArr) > 0 {
 			cmd := strings.ToUpper(responseArr[0])
@@ -97,12 +62,8 @@ func main() {
 			}
 
 			fmt.Printf("%v row(s) affected...\n", affectedRows)
-		} else {
-			continue
 		}
 	}
-
-	helpers.PrintMemUsage()
 	os.Remove(dbName)
 }
 
@@ -121,7 +82,7 @@ func loadFile(responseArr []string, files []entity.File, db *sql.DB, tableCount 
 		if _, err := os.Stat(path); err == nil || os.IsExist(err) {
 			for {
 				fmt.Println("File has a header row (y/n)?")
-				response := strings.ToUpper(strings.TrimSpace(prompt.Input("> ", completer)))
+				response := strings.ToUpper(strings.TrimSpace(prompt.Input("> ", helpers.Completer)))
 				if response == "Y" || response == "N" {
 					content, fileErr := helpers.ReadCSVFile(path)
 					if fileErr != nil {
@@ -142,7 +103,7 @@ func loadFile(responseArr []string, files []entity.File, db *sql.DB, tableCount 
 					} else {
 						for {
 							fmt.Println("Enter " + strconv.Itoa(len(content[0])) + " headers seperated by commas")
-							headers = strings.Split(strings.TrimSpace(prompt.Input("> ", completer)), ",")
+							headers = strings.Split(strings.TrimSpace(prompt.Input("> ", helpers.Completer)), ",")
 							if len(content[0]) == len(headers) {
 								break
 							}
