@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"csv-sql/entity"
 	"encoding/csv"
 	"fmt"
 	"os"
@@ -28,15 +29,15 @@ func ReadCSVFile(path string) ([][]string, error) {
 	return records, nil
 }
 
-func WriteToCSV(path string, headers []string, data [][]string) {
+func WriteToCSV(path string, result entity.Table) {
 	csvFile, err := os.Create(path)
 	if err != nil {
 		fmt.Printf("Error creating %v : %v\n", path, err.Error())
 		return
 	}
 	csvWriter := csv.NewWriter(csvFile)
-	csvWriter.Write(headers)
-	csvWriter.WriteAll(data)
+	csvWriter.Write(result.Headers)
+	csvWriter.WriteAll(result.Data)
 	csvWriter.Flush()
 	csvFile.Close()
 }

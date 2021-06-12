@@ -17,7 +17,7 @@ import (
 
 func main() {
 	defer handleExit()
-	fmt.Println("Welcome to csvql")
+	fmt.Println("Welcome to CSV-SQL")
 	files := make([]entity.File, 0)
 	tableCount := 0
 	dbName := "/tmp/csvql_db_" + helpers.RandSeq(10) + ".db"
@@ -45,7 +45,7 @@ func main() {
 			}
 
 			if cmd == "SHOW" && response == "SHOW TABLES" {
-				printFiles(files)
+				helpers.PrintFiles(files)
 				continue
 			}
 
@@ -139,25 +139,17 @@ func saveFile(responseArr []string, db *sql.DB, files []entity.File) {
 	if len(responseArr) == 3 {
 		table := strings.TrimSpace(responseArr[1])
 		path := strings.TrimSpace(responseArr[2])
-		file := entity.File{}
-		found := false
 
-		for i := range files {
-			if files[i].Table == table {
-				file = files[i]
-				found = true
-				break
-			}
-		}
-
-		if !found {
+		res := helpers.GetData(db, "SELECT COUNT(*) FROM sqlite_master where type='table' AND tbl_name = '"+table+"'")
+		tableCount, _ := strconv.Atoi(res.Data[0][0])
+		if tableCount == 0 {
 			fmt.Println("Table not found")
 			return
 		}
 
 		result := helpers.GetData(db, "SELECT * FROM "+table)
 		if len(result.Data) > 0 {
-			helpers.WriteToCSV(path, file.Headers, result.Data)
+			helpers.WriteToCSV(path, result)
 		}
 	} else {
 		fmt.Println("Please use SAVE table_name /path/to/file")
@@ -172,13 +164,6 @@ func createDB(dbName string) *sql.DB {
 	file.Close()
 	db, _ := sql.Open("sqlite3", dbName)
 	return db
-}
-
-func printFiles(files []entity.File) {
-	fmt.Println("---")
-	for _, file := range files {
-		fmt.Printf("Table: %v\nHeaders: %v\nPath: %v\n---\n", file.Table, strings.Join(file.Headers, ", "), file.Path)
-	}
 }
 
 func handleExit() {
