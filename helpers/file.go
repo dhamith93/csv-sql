@@ -5,9 +5,19 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+
+	"github.com/360EntSecGroup-Skylar/excelize/v2"
+	"github.com/gabriel-vasile/mimetype"
 )
 
-// ReadCSVFile read from given CSV file
+func GetMimeType(path string) (string, error) {
+	mtype, err := mimetype.DetectFile(path)
+	if err != nil {
+		return "", err
+	}
+	return mtype.String(), nil
+}
+
 func ReadCSVFile(path string) ([][]string, error) {
 	file, err := os.Open(path)
 
@@ -27,6 +37,26 @@ func ReadCSVFile(path string) ([][]string, error) {
 	}
 
 	return records, nil
+}
+
+func GetXLSXSheetList(path string) ([]string, error) {
+	f, err := excelize.OpenFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return f.GetSheetList(), nil
+}
+
+func ReadXLSXFile(path string, sheet string) ([][]string, error) {
+	f, err := excelize.OpenFile(path)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := f.GetRows(sheet)
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
 }
 
 func WriteToCSV(path string, result entity.Table) {

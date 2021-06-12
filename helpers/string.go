@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"math/rand"
+	"strconv"
 	"time"
 	"unsafe"
 )
@@ -29,4 +30,27 @@ func RandSeq(n int) string {
 		remain--
 	}
 	return *(*string)(unsafe.Pointer(&b))
+}
+
+func IsIntegral(val string) bool {
+	if !isNumeric(val) {
+		return false
+	}
+	num, _ := strconv.ParseFloat(val, 64)
+	return isIntegral(num)
+}
+
+func ConvertToIntString(val string) string {
+	num, _ := strconv.ParseFloat(val, 64)
+	intNum := int(num)
+	return strconv.Itoa(intNum)
+}
+
+func isIntegral(val float64) bool {
+	return val == float64(int(val))
+}
+
+func isNumeric(val string) bool {
+	_, err := strconv.ParseFloat(val, 64)
+	return err == nil
 }

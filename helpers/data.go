@@ -32,6 +32,10 @@ func PopulateTables(db *sql.DB, file *entity.File) {
 
 		for _, c := range row {
 			builder.WriteString("\"")
+			// this is to handle numbers in xlsx files as they represented as float in xlsx
+			if IsIntegral(c) {
+				c = ConvertToIntString(c)
+			}
 			builder.WriteString(c)
 			builder.WriteString("\"")
 			builder.WriteString(",")

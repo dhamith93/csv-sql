@@ -70,6 +70,16 @@ func loadFile(responseArr []string, files []entity.File, db *sql.DB, tableCount 
 	if len(responseArr) == 3 {
 		path := responseArr[1]
 		tableName := responseArr[2]
+		mimeType, err := helpers.GetMimeType(path)
+		if err != nil {
+			fmt.Printf("Error reading mimetype of file %v : %v\n", path, err.Error())
+			return files
+		}
+
+		if !validFileType(mimeType) {
+			fmt.Printf("Error reading file %v : file type not supported\n", path)
+			return files
+		}
 
 		for i := range files {
 			if files[i].Table == tableName {
@@ -78,59 +88,72 @@ func loadFile(responseArr []string, files []entity.File, db *sql.DB, tableCount 
 			}
 		}
 
-		if _, err := os.Stat(path); err == nil || os.IsExist(err) {
-			for {
-				fmt.Println("File has a header row (y/n)?")
-				response := strings.ToUpper(strings.TrimSpace(prompt.Input("> ", helpers.Completer)))
-				if response == "Y" || response == "N" {
-					content, fileErr := helpers.ReadCSVFile(path)
-					if fileErr != nil {
-						fmt.Printf("Error reading file %v : %v\n", path, fileErr.Error())
-						break
+		for {
+			fmt.Println("File has a header row (y/n)?")
+			response := strings.ToUpper(strings.TrimSpace(prompt.Input("> ", helpers.Completer)))
+			if response == "Y" || response == "N" {
+				var (
+					content [][]string
+					fileErr error
+					headers = make([]string, 0)
+				)
+
+				if mimeType == "text/csv" {
+					content, fileErr = helpers.ReadCSVFile(path)
+				}
+
+				if mimeType == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" {
+					sheets, err := helpers.GetXLSXSheetList(path)
+					if err != nil {
+						fmt.Printf("Error reading file %v : %v\n", path, err.Error())
+						return files
 					}
+					fmt.Printf("What is the name of the sheet to be loaded? %v\n", strings.Join(sheets, ", "))
+					sheet := strings.TrimSpace(prompt.Choose("> ", sheets))
+					content, fileErr = helpers.ReadXLSXFile(path, sheet)
+				}
 
-					if len(content) == 0 {
-						fmt.Println("Empty file")
-						break
-					}
+				if fileErr != nil {
+					fmt.Printf("Error reading file %v : %v\n", path, fileErr.Error())
+					return files
+				}
 
-					headers := make([]string, 0)
+				if len(content) == 0 {
+					fmt.Println("Empty file")
+					return files
+				}
 
-					if response == "Y" {
-						headers = content[0]
-						content = content[1:]
-					} else {
-						for {
-							fmt.Println("Enter " + strconv.Itoa(len(content[0])) + " headers seperated by commas")
-							headers = strings.Split(strings.TrimSpace(prompt.Input("> ", helpers.Completer)), ",")
-							if len(content[0]) == len(headers) {
-								break
-							}
+				if response == "Y" {
+					headers = content[0]
+					content = content[1:]
+				} else {
+					for {
+						fmt.Println("Enter " + strconv.Itoa(len(content[0])) + " headers seperated by commas")
+						headers = strings.Split(strings.TrimSpace(prompt.Input("> ", helpers.Completer)), ",")
+						if len(content[0]) == len(headers) {
+							break
 						}
 					}
-
-					for i := range headers {
-						headers[i] = strings.TrimSpace(headers[i])
-					}
-
-					file := entity.File{
-						Path:    path,
-						Headers: headers,
-						Table:   strings.TrimSpace(tableName),
-					}
-
-					files = append(files, file)
-					file.Content = content
-					helpers.PopulateTables(db, &file)
-					tableCount++
-					break
 				}
+
+				for i := range headers {
+					headers[i] = strings.TrimSpace(headers[i])
+				}
+
+				file := entity.File{
+					Path:    path,
+					Headers: headers,
+					Table:   strings.TrimSpace(tableName),
+				}
+
+				files = append(files, file)
+				file.Content = content
+				helpers.PopulateTables(db, &file)
+				tableCount++
+				break
 			}
-		} else {
-			fmt.Printf("File doesn't exists: %v\n", path)
 		}
-	} else {
-		fmt.Println("Please use LOAD /path/to/file.csv table_name")
+
 	}
 	return files
 }
@@ -164,6 +187,10 @@ func createDB(dbName string) *sql.DB {
 	file.Close()
 	db, _ := sql.Open("sqlite3", dbName)
 	return db
+}
+
+func validFileType(mimeType string) bool {
+	return mimeType == "text/csv" || mimeType == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 }
 
 func handleExit() {
