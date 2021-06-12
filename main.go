@@ -40,8 +40,7 @@ func main() {
 			}
 
 			if cmd == "SELECT" {
-				helpers.PrintMemUsage()
-				fmt.Println(helpers.GetData(db, response))
+				helpers.PrintTable(helpers.GetData(db, response))
 				continue
 			}
 
@@ -157,8 +156,8 @@ func saveFile(responseArr []string, db *sql.DB, files []entity.File) {
 		}
 
 		result := helpers.GetData(db, "SELECT * FROM "+table)
-		if len(result) > 0 {
-			helpers.WriteToCSV(path, file.Headers, result)
+		if len(result.Data) > 0 {
+			helpers.WriteToCSV(path, file.Headers, result.Data)
 		}
 	} else {
 		fmt.Println("Please use SAVE table_name /path/to/file")

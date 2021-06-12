@@ -77,24 +77,28 @@ func RunQuery(db *sql.DB, query string) (int64, error) {
 	return res.RowsAffected()
 }
 
-func GetData(db *sql.DB, query string) [][]string {
+func GetData(db *sql.DB, query string) entity.Table {
+	table := entity.Table{}
 	row, err := db.Query(query)
 	if err != nil {
 		fmt.Printf("Error in %v : %v\n", query, err.Error())
-		return nil
+		return table
 	}
 	defer row.Close()
+
 	columns, err := row.Columns()
 	if err != nil {
 		fmt.Printf("Error reading columns %v : %v\n", query, err.Error())
-		return nil
+		return table
 	}
+
 	output := make([][]string, 0)
 	rawResult := make([][]byte, len(columns))
 	dest := make([]interface{}, len(columns))
 	for i := range rawResult {
 		dest[i] = &rawResult[i]
 	}
+
 	for row.Next() {
 		row.Scan(dest...)
 		res := make([]string, 0)
@@ -105,5 +109,8 @@ func GetData(db *sql.DB, query string) [][]string {
 		}
 		output = append(output, res)
 	}
-	return output
+
+	table.Headers = columns
+	table.Data = output
+	return table
 }
