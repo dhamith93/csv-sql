@@ -112,7 +112,6 @@ func loadFile(responseArr []string, files []entity.File, db *sql.DB, tableCount 
 
 					for i := range headers {
 						headers[i] = strings.TrimSpace(headers[i])
-
 					}
 
 					file := entity.File{
@@ -123,7 +122,7 @@ func loadFile(responseArr []string, files []entity.File, db *sql.DB, tableCount 
 
 					files = append(files, file)
 					file.Content = content
-					helpers.PopulateTables(db, file)
+					helpers.PopulateTables(db, &file)
 					tableCount++
 					break
 				}

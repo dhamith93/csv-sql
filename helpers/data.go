@@ -9,7 +9,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func PopulateTables(db *sql.DB, file entity.File) {
+func PopulateTables(db *sql.DB, file *entity.File) {
 	header := ""
 	for i := 0; i < len(file.Headers); i++ {
 		header += "\"" + file.Headers[i] + "\" TEXT"
@@ -22,6 +22,7 @@ func PopulateTables(db *sql.DB, file entity.File) {
 	if err != nil {
 		fmt.Printf("Error in %v : %v\n", query, err.Error())
 	}
+	defer statement.Close()
 	statement.Exec()
 	tx, _ := db.Begin()
 	hasError := false
@@ -43,6 +44,7 @@ func PopulateTables(db *sql.DB, file entity.File) {
 		if err != nil {
 			fmt.Printf("Error in %v : %v\n", insertQuery, err.Error())
 		}
+		defer statement.Close()
 		_, err = statement.Exec()
 		if err != nil {
 			hasError = true
@@ -64,6 +66,7 @@ func RunQuery(db *sql.DB, query string) (int64, error) {
 		fmt.Printf("Error in %v : %v\n", query, err.Error())
 		return 0, nil
 	}
+	defer statement.Close()
 	res, err := statement.Exec()
 	if err != nil {
 		tx.Rollback()
