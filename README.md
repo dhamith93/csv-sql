@@ -1,7 +1,7 @@
 # csv-sql
 Command-line tool to load csv and excel (xlsx) files and run sql commands 
 
-[![Go](https://github.com/dhamith93/csv-sql/actions/workflows/go.yml/badge.svg)](https://github.com/dhamith93/csv-sql/actions/workflows/go.yml)
+[![Go](https://github.com/dhamith93/csv-sql/actions/workflows/go.yml/badge.svg)](https://github.com/dhamith93/csv-sql/actions/workflows/go.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/dhamith93/csv-sql)](https://goreportcard.com/report/github.com/dhamith93/csv-sql)
 
 ## Usage
 
