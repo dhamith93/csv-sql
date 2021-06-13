@@ -33,24 +33,15 @@ func RandSeq(n int) string {
 }
 
 func IsIntegral(val string) bool {
-	if !isNumeric(val) {
+	num, err := strconv.ParseFloat(val, 64)
+	if err != nil {
 		return false
 	}
-	num, _ := strconv.ParseFloat(val, 64)
-	return isIntegral(num)
+	return num == float64(int(num))
 }
 
 func ConvertToIntString(val string) string {
 	num, _ := strconv.ParseFloat(val, 64)
 	intNum := int(num)
 	return strconv.Itoa(intNum)
-}
-
-func isIntegral(val float64) bool {
-	return val == float64(int(val))
-}
-
-func isNumeric(val string) bool {
-	_, err := strconv.ParseFloat(val, 64)
-	return err == nil
 }
