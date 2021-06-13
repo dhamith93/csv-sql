@@ -41,15 +41,23 @@ func CreateDB(dbName string) *sql.DB {
 }
 
 func PopulateTables(db *sql.DB, file *entity.File) {
-	header := ""
+	var (
+		statement *sql.Stmt
+		err       error
+		builder   strings.Builder
+		header    string
+	)
+
 	for i := 0; i < len(file.Headers); i++ {
 		header += "\"" + file.Headers[i] + "\" TEXT"
 		if i != (len(file.Headers) - 1) {
 			header += ","
 		}
 	}
+
 	query := "CREATE TABLE " + file.Table + " (" + header + ");"
-	statement, err := db.Prepare(query)
+
+	statement, err = db.Prepare(query)
 	if err != nil {
 		fmt.Printf("Error in %v : %v\n", query, err.Error())
 	}
@@ -59,8 +67,6 @@ func PopulateTables(db *sql.DB, file *entity.File) {
 	hasError := false
 
 	for _, row := range file.Content {
-		var builder strings.Builder
-
 		for _, c := range row {
 			builder.WriteString("\"")
 			// this is to handle numbers in xlsx files as they represented as float in xlsx
@@ -73,9 +79,10 @@ func PopulateTables(db *sql.DB, file *entity.File) {
 		}
 
 		data := strings.TrimSuffix(builder.String(), ",")
+		builder.Reset()
 
 		insertQuery := "INSERT INTO " + file.Table + " VALUES (" + data + ");"
-		statement, err := tx.Prepare(insertQuery)
+		statement, err = tx.Prepare(insertQuery)
 		if err != nil {
 			fmt.Printf("Error in %v : %v\n", insertQuery, err.Error())
 		}

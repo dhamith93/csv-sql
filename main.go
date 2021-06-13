@@ -173,6 +173,7 @@ func loadFile(responseArr []string, files []entity.File, db *sql.DB, tableCount 
 				file.Content = content
 				helpers.PopulateTables(db, &file)
 				tableCount++
+				file.Content = nil
 				break
 			}
 		}
