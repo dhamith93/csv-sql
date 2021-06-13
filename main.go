@@ -5,7 +5,6 @@ import (
 	"csv-sql/helpers"
 	"database/sql"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"strconv"
@@ -21,13 +20,18 @@ func main() {
 	files := make([]entity.File, 0)
 	tableCount := 0
 	dbName := "/tmp/csvql_db_" + helpers.RandSeq(10) + ".db"
-	db := createDB(dbName)
+	db := helpers.CreateDB(dbName)
 	defer db.Close()
 
 	for {
 		response := strings.TrimSpace(prompt.Input("cmd > ", helpers.Completer))
 		responseArr := strings.Fields(response)
 		if len(responseArr) > 0 {
+			if response == "SHOW TABLES" {
+				helpers.ShowTables(db)
+				continue
+			}
+
 			cmd := strings.ToUpper(responseArr[0])
 
 			if cmd == "LOAD" {
@@ -39,13 +43,13 @@ func main() {
 				break
 			}
 
-			if cmd == "SELECT" {
-				helpers.PrintTable(helpers.GetData(db, response))
+			if cmd == "DB" {
+				db = openDB(responseArr, db, dbName)
 				continue
 			}
 
-			if cmd == "SHOW" && response == "SHOW TABLES" {
-				helpers.PrintFiles(files)
+			if cmd == "SELECT" {
+				helpers.PrintTable(helpers.GetData(db, response))
 				continue
 			}
 
@@ -64,6 +68,25 @@ func main() {
 		}
 	}
 	os.Remove(dbName)
+}
+
+func openDB(responseArr []string, db *sql.DB, dbName string) *sql.DB {
+	if len(responseArr) > 1 {
+		if helpers.IsFile(responseArr[1]) {
+			var err error
+			db, err = helpers.OpenDB(db, responseArr[1])
+
+			if err != nil {
+				fmt.Printf("Error opening DB : %v\n", err.Error())
+				fmt.Println("Falling back to default DB")
+				db, _ = helpers.OpenDB(db, dbName)
+			}
+
+		}
+	} else {
+		fmt.Println("Not a valid file to open as a DB")
+	}
+	return db
 }
 
 func loadFile(responseArr []string, files []entity.File, db *sql.DB, tableCount int) []entity.File {
@@ -128,7 +151,7 @@ func loadFile(responseArr []string, files []entity.File, db *sql.DB, tableCount 
 					content = content[1:]
 				} else {
 					for {
-						fmt.Println("Enter " + strconv.Itoa(len(content[0])) + " headers seperated by commas")
+						fmt.Println("Enter " + strconv.Itoa(len(content[0])) + " headers separated by commas")
 						headers = strings.Split(strings.TrimSpace(prompt.Input("> ", helpers.Completer)), ",")
 						if len(content[0]) == len(headers) {
 							break
@@ -177,16 +200,6 @@ func saveFile(responseArr []string, db *sql.DB, files []entity.File) {
 	} else {
 		fmt.Println("Please use SAVE table_name /path/to/file")
 	}
-}
-
-func createDB(dbName string) *sql.DB {
-	file, err := os.Create(dbName)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	file.Close()
-	db, _ := sql.Open("sqlite3", dbName)
-	return db
 }
 
 func validFileType(mimeType string) bool {

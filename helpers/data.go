@@ -3,11 +3,42 @@ package helpers
 import (
 	"csv-sql/entity"
 	"database/sql"
+	"errors"
 	"fmt"
+	"log"
+	"os"
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
+
+func OpenDB(db *sql.DB, dbName string) (*sql.DB, error) {
+	mimetype, err := GetMimeType(dbName)
+	if err != nil {
+		return db, err
+	}
+
+	if mimetype != "application/x-sqlite3" {
+		return db, errors.New("file is not a sqlite db")
+	}
+
+	db.Close()
+	db, err = sql.Open("sqlite3", dbName)
+	if err != nil {
+		return db, err
+	}
+	return db, nil
+}
+
+func CreateDB(dbName string) *sql.DB {
+	file, err := os.Create(dbName)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	file.Close()
+	db, _ := sql.Open("sqlite3", dbName)
+	return db
+}
 
 func PopulateTables(db *sql.DB, file *entity.File) {
 	header := ""

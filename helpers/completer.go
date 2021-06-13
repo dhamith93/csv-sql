@@ -6,6 +6,7 @@ func Completer(d prompt.Document) []prompt.Suggest {
 	s := []prompt.Suggest{
 		{Text: "LOAD", Description: "LOAD /path/to/file table_name"},
 		{Text: "SAVE", Description: "SAVE table_name /path/to/file"},
+		{Text: "DB", Description: "DB /path/to/sqlite/db"},
 		{Text: "SHOW TABLES", Description: ""},
 		{Text: "EXIT", Description: ""},
 		{Text: "SELECT", Description: ""},

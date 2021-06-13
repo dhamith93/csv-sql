@@ -71,3 +71,8 @@ func WriteToCSV(path string, result entity.Table) {
 	csvWriter.Flush()
 	csvFile.Close()
 }
+
+func IsFile(path string) bool {
+	_, err := os.Open(path)
+	return err == nil
+}
