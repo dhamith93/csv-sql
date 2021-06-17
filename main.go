@@ -1,8 +1,11 @@
 package main
 
 import (
-	"csv-sql/entity"
-	"csv-sql/helpers"
+	"csv-sql/internal/completer"
+	"csv-sql/internal/database"
+	"csv-sql/internal/display"
+	"csv-sql/internal/file"
+	"csv-sql/internal/stringops"
 	"database/sql"
 	"fmt"
 	"os"
@@ -17,18 +20,18 @@ import (
 func main() {
 	defer handleExit()
 	fmt.Println("Welcome to CSV-SQL")
-	files := make([]entity.File, 0)
+	files := make([]file.File, 0)
 	tableCount := 0
-	dbName := "/tmp/csvql_db_" + helpers.RandSeq(10) + ".db"
-	db := helpers.CreateDB(dbName)
+	dbName := "/tmp/csvql_db_" + stringops.RandSeq(10) + ".db"
+	db := database.CreateDB(dbName)
 	defer db.Close()
 
 	for {
-		response := strings.TrimSpace(prompt.Input("cmd > ", helpers.Completer))
+		response := strings.TrimSpace(prompt.Input("cmd > ", completer.Completer))
 		responseArr := strings.Fields(response)
 		if len(responseArr) > 0 {
 			if response == "SHOW TABLES" {
-				helpers.ShowTables(db)
+				display.ShowTables(db)
 				continue
 			}
 
@@ -49,7 +52,7 @@ func main() {
 			}
 
 			if cmd == "SELECT" {
-				helpers.PrintTable(helpers.GetData(db, response))
+				display.PrintTable(database.GetData(db, response))
 				continue
 			}
 
@@ -58,7 +61,7 @@ func main() {
 				continue
 			}
 
-			affectedRows, err := helpers.RunQuery(db, response)
+			affectedRows, err := database.RunQuery(db, response)
 			if err != nil {
 				fmt.Printf("Error in %v : %v\n", response, err.Error())
 				continue
@@ -72,14 +75,14 @@ func main() {
 
 func openDB(responseArr []string, db *sql.DB, dbName string) *sql.DB {
 	if len(responseArr) > 1 {
-		if helpers.IsFile(responseArr[1]) {
+		if file.IsFile(responseArr[1]) {
 			var err error
-			db, err = helpers.OpenDB(db, responseArr[1])
+			db, err = database.OpenDB(db, responseArr[1])
 
 			if err != nil {
 				fmt.Printf("Error opening DB : %v\n", err.Error())
 				fmt.Println("Falling back to default DB")
-				db, _ = helpers.OpenDB(db, dbName)
+				db, _ = database.OpenDB(db, dbName)
 			}
 
 		}
@@ -89,11 +92,11 @@ func openDB(responseArr []string, db *sql.DB, dbName string) *sql.DB {
 	return db
 }
 
-func loadFile(responseArr []string, files []entity.File, db *sql.DB, tableCount int) []entity.File {
+func loadFile(responseArr []string, files []file.File, db *sql.DB, tableCount int) []file.File {
 	if len(responseArr) == 3 {
 		path := responseArr[1]
 		tableName := responseArr[2]
-		mimeType, err := helpers.GetMimeType(path)
+		mimeType, err := file.GetMimeType(path)
 		if err != nil {
 			fmt.Printf("Error reading mimetype of file %v : %v\n", path, err.Error())
 			return files
@@ -113,7 +116,7 @@ func loadFile(responseArr []string, files []entity.File, db *sql.DB, tableCount 
 
 		for {
 			fmt.Println("File has a header row (y/n)?")
-			response := strings.ToUpper(strings.TrimSpace(prompt.Input("> ", helpers.Completer)))
+			response := strings.ToUpper(strings.TrimSpace(prompt.Input("> ", completer.Completer)))
 			if response == "Y" || response == "N" {
 				var (
 					content [][]string
@@ -122,18 +125,18 @@ func loadFile(responseArr []string, files []entity.File, db *sql.DB, tableCount 
 				)
 
 				if mimeType == "text/csv" {
-					content, fileErr = helpers.ReadCSVFile(path)
+					content, fileErr = file.ReadCSVFile(path)
 				}
 
 				if mimeType == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" {
-					sheets, err := helpers.GetXLSXSheetList(path)
+					sheets, err := file.GetXLSXSheetList(path)
 					if err != nil {
 						fmt.Printf("Error reading file %v : %v\n", path, err.Error())
 						return files
 					}
 					fmt.Printf("What is the name of the sheet to be loaded? %v\n", strings.Join(sheets, ", "))
 					sheet := strings.TrimSpace(prompt.Choose("> ", sheets))
-					content, fileErr = helpers.ReadXLSXFile(path, sheet)
+					content, fileErr = file.ReadXLSXFile(path, sheet)
 				}
 
 				if fileErr != nil {
@@ -152,7 +155,7 @@ func loadFile(responseArr []string, files []entity.File, db *sql.DB, tableCount 
 				} else {
 					for {
 						fmt.Println("Enter " + strconv.Itoa(len(content[0])) + " headers separated by commas")
-						headers = strings.Split(strings.TrimSpace(prompt.Input("> ", helpers.Completer)), ",")
+						headers = strings.Split(strings.TrimSpace(prompt.Input("> ", completer.Completer)), ",")
 						if len(content[0]) == len(headers) {
 							break
 						}
@@ -163,7 +166,7 @@ func loadFile(responseArr []string, files []entity.File, db *sql.DB, tableCount 
 					headers[i] = strings.TrimSpace(headers[i])
 				}
 
-				file := entity.File{
+				file := file.File{
 					Path:    path,
 					Headers: headers,
 					Table:   strings.TrimSpace(tableName),
@@ -171,7 +174,7 @@ func loadFile(responseArr []string, files []entity.File, db *sql.DB, tableCount 
 
 				files = append(files, file)
 				file.Content = content
-				helpers.PopulateTables(db, &file)
+				database.PopulateTables(db, &file)
 				tableCount++
 				file.Content = nil
 				break
@@ -182,21 +185,21 @@ func loadFile(responseArr []string, files []entity.File, db *sql.DB, tableCount 
 	return files
 }
 
-func saveFile(responseArr []string, db *sql.DB, files []entity.File) {
+func saveFile(responseArr []string, db *sql.DB, files []file.File) {
 	if len(responseArr) == 3 {
 		table := strings.TrimSpace(responseArr[1])
 		path := strings.TrimSpace(responseArr[2])
 
-		res := helpers.GetData(db, "SELECT COUNT(*) FROM sqlite_master where type='table' AND tbl_name = '"+table+"'")
+		res := database.GetData(db, "SELECT COUNT(*) FROM sqlite_master where type='table' AND tbl_name = '"+table+"'")
 		tableCount, _ := strconv.Atoi(res.Data[0][0])
 		if tableCount == 0 {
 			fmt.Println("Table not found")
 			return
 		}
 
-		result := helpers.GetData(db, "SELECT * FROM "+table)
+		result := database.GetData(db, "SELECT * FROM "+table)
 		if len(result.Data) > 0 {
-			helpers.WriteToCSV(path, result)
+			file.WriteToCSV(path, result)
 		}
 	} else {
 		fmt.Println("Please use SAVE table_name /path/to/file")

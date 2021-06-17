@@ -1,4 +1,4 @@
-package entity
+package table
 
 type Table struct {
 	Headers []string

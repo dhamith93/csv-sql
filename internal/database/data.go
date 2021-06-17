@@ -1,7 +1,9 @@
-package helpers
+package database
 
 import (
-	"csv-sql/entity"
+	"csv-sql/internal/file"
+	"csv-sql/internal/stringops"
+	"csv-sql/internal/table"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -12,8 +14,9 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// OpenDB opens a SQLite DB file
 func OpenDB(db *sql.DB, dbName string) (*sql.DB, error) {
-	mimetype, err := GetMimeType(dbName)
+	mimetype, err := file.GetMimeType(dbName)
 	if err != nil {
 		return db, err
 	}
@@ -30,6 +33,7 @@ func OpenDB(db *sql.DB, dbName string) (*sql.DB, error) {
 	return db, nil
 }
 
+// CreateDB create and return SQLite DB
 func CreateDB(dbName string) *sql.DB {
 	file, err := os.Create(dbName)
 	if err != nil {
@@ -40,7 +44,8 @@ func CreateDB(dbName string) *sql.DB {
 	return db
 }
 
-func PopulateTables(db *sql.DB, file *entity.File) {
+// PopilateTables create and populate the file content into DB
+func PopulateTables(db *sql.DB, file *file.File) {
 	var (
 		statement *sql.Stmt
 		err       error
@@ -72,8 +77,8 @@ func PopulateTables(db *sql.DB, file *entity.File) {
 		for _, c := range row {
 			builder.WriteString("\"")
 			// this is to handle numbers in xlsx files as they represented as float in xlsx
-			if IsIntegral(c) {
-				c = ConvertToIntString(c)
+			if stringops.IsIntegral(c) {
+				c = stringops.ConvertToIntString(c)
 			}
 			builder.WriteString(c)
 			builder.WriteString("\"")
@@ -103,6 +108,7 @@ func PopulateTables(db *sql.DB, file *entity.File) {
 	file.Content = nil
 }
 
+// RunQuery runs C,U,D sql commands
 func RunQuery(db *sql.DB, query string) (int64, error) {
 	tx, _ := db.Begin()
 	statement, err := tx.Prepare(query)
@@ -121,8 +127,9 @@ func RunQuery(db *sql.DB, query string) (int64, error) {
 	return res.RowsAffected()
 }
 
-func GetData(db *sql.DB, query string) entity.Table {
-	table := entity.Table{}
+// GetData runs select queries in DB
+func GetData(db *sql.DB, query string) table.Table {
+	table := table.Table{}
 	row, err := db.Query(query)
 	if err != nil {
 		fmt.Printf("Error in %v : %v\n", query, err.Error())

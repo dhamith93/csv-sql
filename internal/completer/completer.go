@@ -1,7 +1,8 @@
-package helpers
+package completer
 
 import "github.com/c-bata/go-prompt"
 
+// Completer returns the prompt with suggestions
 func Completer(d prompt.Document) []prompt.Suggest {
 	s := []prompt.Suggest{
 		{Text: "LOAD", Description: "LOAD /path/to/file table_name"},

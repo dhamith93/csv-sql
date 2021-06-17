@@ -1,7 +1,7 @@
-package helpers
+package file
 
 import (
-	"csv-sql/entity"
+	"csv-sql/internal/table"
 	"encoding/csv"
 	"fmt"
 	"os"
@@ -9,6 +9,13 @@ import (
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/gabriel-vasile/mimetype"
 )
+
+type File struct {
+	Path    string
+	Headers []string
+	Table   string
+	Content [][]string
+}
 
 func GetMimeType(path string) (string, error) {
 	mtype, err := mimetype.DetectFile(path)
@@ -59,7 +66,7 @@ func ReadXLSXFile(path string, sheet string) ([][]string, error) {
 	return rows, nil
 }
 
-func WriteToCSV(path string, result entity.Table) {
+func WriteToCSV(path string, result table.Table) {
 	csvFile, err := os.Create(path)
 	if err != nil {
 		fmt.Printf("Error creating %v : %v\n", path, err.Error())

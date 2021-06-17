@@ -1,4 +1,4 @@
-package helpers
+package stringops
 
 import (
 	"math/rand"
@@ -32,6 +32,7 @@ func RandSeq(n int) string {
 	return *(*string)(unsafe.Pointer(&b))
 }
 
+// IsIntegral checks if a string is an int
 func IsIntegral(val string) bool {
 	num, err := strconv.ParseFloat(val, 64)
 	if err != nil {
@@ -40,6 +41,7 @@ func IsIntegral(val string) bool {
 	return num == float64(int(num))
 }
 
+// ConvertToIntString converts a string to an int string ('1.0' => '1')
 func ConvertToIntString(val string) string {
 	num, _ := strconv.ParseFloat(val, 64)
 	intNum := int(num)
