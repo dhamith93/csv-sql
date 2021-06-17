@@ -5,7 +5,7 @@ Command-line tool to load csv and excel (xlsx) files and run sql commands
 
 ## Usage
 
-csv-sql supports loading and saving results as CSV and XLSX files with data processing with SQLite compatible sql commands.
+csv-sql supports loading and saving results as CSV and XLSX files with data processing with SQLite compatible sql commands including joins.
 
 Also, this can be used to open existing SQLite DBs and extract data as CSV.
 
@@ -36,3 +36,5 @@ SAVE table_name /path/to/save.csv
 ## Screenshots
 
 ![](screenshots/screenshot_01.png)
+
+![](screenshots/screenshot_02.png)
