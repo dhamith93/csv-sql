@@ -60,6 +60,8 @@ func PopulateTables(db *sql.DB, file *entity.File) {
 	statement, err = db.Prepare(query)
 	if err != nil {
 		fmt.Printf("Error in %v : %v\n", query, err.Error())
+		fmt.Println("When loading xlsx, please use a sheet with correct data")
+		return
 	}
 	defer statement.Close()
 	statement.Exec()
